@@ -1,0 +1,103 @@
+public class searchusinglist {
+
+ public String selectedAccount {set;get;}
+ public list<Account> acclst {get; set; }
+ public String acc { get; set; }
+ public Account cloneAccount { get; set;}
+ public contact cloneContact { get; set; }
+    public opportunity cloneOpportunity { get; set; }
+ public List<contact> conlst { get; set; }
+ public List<opportunity> opplst { get; set; }
+ public List<wrapContact> wrapAccCon { get; set; }
+ public List<wrapOpportunity> wrapAccOpp{ get; set; }
+ 
+    public PageReference callControllerMethod() {
+      
+            wrapAccCon = new List<wrapContact>();
+            for(contact c : [select id,name,lastname, accountid from contact  where accountId=: selectedAccount]){
+               wrapAccCon.add(new wrapContact(c)); 
+            }   
+        
+       
+          wrapAccOpp =new List<wrapOpportunity>();
+            for(opportunity q : [select id,name, closedate,stagename, accountid from opportunity where accountId=: selectedAccount]){
+                wrapAccOpp.add(new wrapOpportunity(q));
+            }
+        
+        return null;
+    }
+  
+    public searchusinglist() {
+    }
+    
+    public list<SelectOption> getListOptions(){
+        List<SelectOption> lOption = new List<SelectOption>();
+        List<Account> accLIst = [select id,name from Account];
+        for(account acc: accLIst){
+            lOption.add(new Selectoption(acc.id,acc.name));
+        }
+        return lOption;
+    }
+    
+    public void CloneButton(){
+	    conlst= new List<contact>();
+        opplst= new list<opportunity>();
+        cloneAccount=new Account();
+        
+        for(account acc:[select id,name from Account where id=:selectedAccount]){
+            cloneAccount=acc.clone();
+        }
+        insert cloneAccount;
+    
+    
+    for(wrapContact conWrap:wrapAccCon){
+        if(conWrap.selected==true){
+           cloneContact=new contact();
+            cloneContact=conWrap.con.clone();
+            cloneContact.accountId=cloneAccount.id;
+            
+conlst.add(cloneContact);          
+        }
+    }
+    If(conlst.size()>0)
+         {
+        	insert conlst;
+         }
+    
+    
+    for(wrapOpportunity oppWrap:wrapAccOpp){
+        if(oppWrap.selected==true){
+          cloneOpportunity=new opportunity();
+            cloneOpportunity=oppWrap.opp.clone();
+            cloneOpportunity.accountId=cloneAccount.id;
+            
+       opplst.add(cloneOpportunity);     
+        }
+    }
+        if(opplst.size()>0) {
+            
+            insert opplst;
+        }
+    }
+    public class wrapContact {
+        public contact con {get; set;}
+        public Boolean selected {get; set;}
+ 
+        //This is the contructor method. When we create a new wrapAccount object we pass a Account that is set to the acc property. We also set the selected value to false
+        public wrapContact(Contact c1) {
+            con = c1;
+            selected = false;
+        }
+    }
+    
+   public class wrapOpportunity {
+        public opportunity opp {get; set;}
+        public Boolean selected {get; set;}
+ 
+        //This is the contructor method. When we create a new wrapAccount object we pass a Account that is set to the acc property. We also set the selected value to false
+        public wrapOpportunity(opportunity o1) {
+            opp = o1;
+            selected = false;
+        }
+}
+}

@@ -1,0 +1,49 @@
+<apex:page Controller="searchusinglist" docType="html-5.0">
+<apex:form >
+<apex:pageBlock >
+    <apex:selectList value="{!selectedAccount}" size="1">
+    <apex:selectOptions value="{!ListOptions}" />
+    <apex:actionSupport event="onchange" action="{!callControllerMethod}" reRender="mainblock"/>
+    </apex:selectList>
+            <!--<apex:actionFunction action="{!callControllerMethod}" name="getacclst" rerender="mainBlock"/>-->
+         	<apex:pageBlock id="mainblock" >
+             <apex:pageBlockSection>
+            <apex:pageBlockTable value="{!wrapAccCon}" var="ct">
+                <apex:column >
+                    <apex:facet name="header">
+                      <apex:inputCheckbox onclick="selectAllCheckboxes(this,'inputIdea')"/>  
+                    </apex:facet>
+            	<apex:inputCheckbox value="{!ct.selected}" id="inputIdea"/>
+                </apex:column>	
+                 <apex:column headerValue="Contact-Name" value="{!ct.con.name}"/>
+            </apex:pageBlockTable>
+              </apex:pageBlockSection>   
+    <apex:pageBlockSection>
+            <apex:pageBlockTable value="{!wrapAccOpp}" var="ot">
+                <apex:column >
+           <apex:facet name="header">
+               <apex:inputCheckbox onclick="selectAllCheckboxes(this,'oppinputId')"/>
+               </apex:facet>
+            <apex:inputCheckbox value="{!ot.selected}" id="oppinputId"/>
+                    </apex:column>
+                 <apex:column headerValue="Opportunity-Name" value="{!ot.opp.name}"/> 
+           </apex:pageBlockTable>
+        </apex:pageBlockSection>
+		   </apex:pageBlock>
+    <apex:commandButton value="Clone" action="{!CloneButton}"/>
+</apex:pageBlock>
+</apex:form>
+     <script>
+        function selectAllCheckboxes(obj,receivedInputID){
+            var inputCheckBox = document.getElementsByTagName("input");   
+            console.log(inputCheckBox);
+            for(var i=0; i<inputCheckBox.length; i++){          
+                              if(inputCheckBox[i].id.indexOf(receivedInputID)!=-1){                                     
+                                  //if(inputCheckBox[i].id.includes(receivedInputID)){        
+                    console.log(inputCheckBox[i].id);
+                    inputCheckBox[i].checked = obj.checked;
+                }
+            }
+        }
+    </script>
+</apex:page>
