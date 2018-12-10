@@ -1,0 +1,53 @@
+Trigger RollupTrigger on Contact(after insert,after update,after delete,after undelete) {
+     system.debug('Trigger');
+            
+Set<Id>accIdList=new Set<Id>();
+    
+    if(Trigger.isInsert||Trigger.isUndelete) {
+        for(Contact c1:Trigger.New) {	
+          system.debug('Trigger.New:' +c1);
+            
+                if(c1.AccountId!=Null)
+                {
+            accIdList.add(c1.AccountId);
+           } 
+        }
+    }
+    else if(Trigger.isUpdate) {
+        for(Contact c1:Trigger.New){
+            	Contact oldc1=Trigger.oldMap.get(c1.Id);
+            system.debug('Trigger.oldMap:' +oldc1);
+            if(c1.AccountId!=Null) {
+            accIdList.add(c1.AccountId);
+            accIdList.add(oldc1.AccountId);
+              }
+        }
+    }
+    
+    if(Trigger.isDelete) {
+        
+        system.debug('inside else:');
+        for(Contact c1:Trigger.Old)
+        {	
+            system.debug('Trigger.old' +c1);
+            accIdList.add(c1.AccountId);
+          
+        }
+    }
+    List<AggregateResult> results = [SELECT AccountId, Count(Id) ContactCount
+                                     FROM Contact
+                                     WHERE AccountId IN:accIdList
+                                     GROUP BY AccountId];
+    System.debug('results ' +results.size());
+    List<Account> AccountList = new List<Account>();
+    for(AggregateResult result:results)
+    {
+        Account acct = new Account(Id= (Id) result.get('AccountId'),UpdateCount__c = (Integer) result.get('ContactCount'));
+        System.debug('Trigger Account: ' +acct);
+        AccountList.add(acct);
+    }
+    if(!AccountList.isEmpty()){
+    update AccountList;
+	}
+
+    }
