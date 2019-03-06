@@ -1,0 +1,282 @@
+({
+    refreshView : function(component, event,helper){
+          var actions = [
+            { label: 'Edit', name: 'edit', 'iconName': 'utility:edit'},
+            { label: 'Archive', name: 'Archive', 'iconName': 'utility:archive' }
+        ];     
+          var rowActions = helper.getRowActions.bind(this, component);
+        
+        component.set('v.columns', [
+            {label: 'Name', fieldName: 'Name', type: 'Name'},
+            {label: 'Email', fieldName: 'Email', type: 'Email'},
+            {label: 'Mobile Phone', fieldName: 'MobilePhone', type: 'Phone'},
+            {label: 'Contact Type', fieldName: 'Contact_Type__c', type: 'text'},            
+            {type: 'action', typeAttributes: { rowActions: rowActions } }
+        ]); 
+        
+        helper.getContacts(component, helper);
+        helper.getFilterOptions(component,event);
+        
+    },
+    
+  
+    
+    archiveContact:function(component,event,helper,contact)
+    {
+        console.log('#####theContact:'+JSON.stringify(contact));
+        var action = component.get("c.archive");
+        action.setParams({
+            "theContact": contact,
+          
+        });
+        
+        action.setCallback(this, function(response) {
+            var state=response.getState();
+            if (state == "SUCCESS") {
+                var result = response.getReturnValue();
+                 component.set('v.archived','');
+                 helper.showToast('Success!','success', 'Archived Successfully!');
+               helper.refreshView(component, event,helper);
+            }  else if (state === "INCOMPLETE") {
+                // do something
+                component.set('v.loading',false);
+                
+            }
+                else if (state === "ERROR") {
+                    component.set('v.loading',false);
+
+                    var errors = response.getError();
+                    if (errors) {
+                        if (errors[0] && errors[0].message) {
+                            console.log(errors[0].message);
+                            
+                            helper.showToast('Error!','error', errors[0].message);
+                        }
+                    } else {
+                        console.log("Unknown error");
+                    }
+                }
+            
+            
+            
+        });
+        $A.enqueueAction(action);
+        
+    },
+    getContacts : function(component, helper) {
+        var action = component.get("c.getContacts");
+        
+        action.setCallback(this,function(response) {
+            var state = response.getState();
+            if (state === "SUCCESS") {
+                component.set('v.loading',false);
+                
+                component.set("v.totalPages", Math.ceil(response.getReturnValue().length/component.get("v.pageSize")));
+                
+                
+                var rows = response.getReturnValue();
+                
+                if(component.get("v.totalPages")==1) {
+                    var page = component.find('pagination');
+                    $A.util.removeClass(page, 'slds-show');
+                    $A.util.addClass(page, 'slds-hide');
+                }
+                
+                
+                component.set("v.allData", rows);
+                component.set("v.allDataForFilter", rows);
+                
+                component.set("v.currentPageNumber",1);
+              
+                //  //default filter value is Active
+                var allData = component.get('v.allDataForFilter');
+               
+                
+                //parameters --> component, field to compare, value to be compared
+                
+                helper.setFilteredData(component,'No_Longer_at_Company__c',false,helper,allData);
+                 var filteredData = component.get('v.allData');
+                helper.setFilteredData(component,'PartnerArchived__c',false,helper,filteredData);
+
+            }
+        });
+        var requestInitiatedTime = new Date().getTime();
+        $A.enqueueAction(action);
+    },
+    
+    /*
+     * this function will build table data
+     * based on current page selection
+     * */
+    buildData : function(component, helper) {
+        var data = [];
+        var pageNumber = component.get("v.currentPageNumber");
+        var pageSize = component.get("v.pageSize");
+        var allData = component.get("v.allData");
+        var x = (pageNumber-1)*pageSize;
+        
+        //creating data-table data
+        for(; x<(pageNumber)*pageSize; x++){
+            if(allData[x]){
+                data.push(allData[x]);
+            }
+        }
+        component.set("v.data", data);
+        
+        helper.generatePageList(component, pageNumber);
+    },
+    
+    /*
+     * this function generate page list
+     * */
+    generatePageList : function(component, pageNumber){
+        pageNumber = parseInt(pageNumber);
+        var pageList = [];
+        var totalPage = component.get("v.totalPages");
+        if(totalPage<7){
+            for (var i = 2; i<=totalPage-1; i++) {
+                pageList.push(i);
+            }
+        } else {
+            if(pageNumber<5){
+                pageList.push(2,3,4,5,6);
+            } else if(pageNumber>(totalPage-5)){
+                pageList.push(totalPage-5, totalPage-4, totalPage-3, totalPage-2, totalPage-1);
+            } else{
+                pageList.push(pageNumber-2, pageNumber-1, pageNumber, pageNumber+1, pageNumber+2);
+            }
+        }
+        component.set("v.pageList", pageList);
+    },
+    
+    getFilterOptions : function(component, event){
+        var filterOptions = [
+            {label:'Active', value:'active'},
+            {label:'Archived', value:'archived'},
+            {label:'No Longer in Company', value:'nolongerincompany'}];
+        component.set('v.filterOptions',filterOptions);
+        //set default filter
+        component.set('v.selectedFilter','active');
+        
+    },
+    
+    setFilteredData : function(component,fieldname,value,helper,data){
+
+        var filteredData = [];
+        
+        if(!$A.util.isEmpty(data)){
+            data.forEach(function(key){
+                if(key[fieldname] == value){
+                    filteredData.push(key);
+                }
+                
+            });
+            
+            component.set('v.allData',filteredData);
+            component.set("v.totalPages", Math.ceil(filteredData.length/component.get("v.pageSize")));
+            helper.buildData(component, helper);
+        } 
+    },
+    showSearchResults : function (component, event,helper) {
+        var queryTerm = component.find('enter-search').get('v.value');
+        component.set("v.currentPageNumber", 1);
+        helper.setSearchFilteredData(component,'Name',queryTerm,helper);
+    },
+    
+    setSearchFilteredData : function(component,fieldname,value,helper){
+        var data = component.get('v.allData');
+        var filteredData = [];
+        
+        if(!$A.util.isEmpty(value)){
+            if(!$A.util.isEmpty(data)){
+                data.forEach(function(key){
+                    
+                    if(!$A.util.isEmpty(key[fieldname]) && !$A.util.isEmpty(value)){
+                        if(key[fieldname].toLowerCase().includes(value.toLowerCase())){
+                            filteredData.push(key);
+                        }
+                    }
+                });
+                
+                component.set('v.allData',filteredData);
+                component.set("v.totalPages", Math.ceil(filteredData.length/component.get("v.pageSize")));
+                helper.buildData(component, helper);
+            } 
+        }else{
+            //reset to default
+            //default filter value is Active
+            helper.filterData(component,event,helper);
+        }
+        
+    },
+    
+     filterData : function(component,event,helper) {
+        
+        var selectedFilter = component.get('v.selectedFilter');
+          var allData = component.get('v.allDataForFilter');
+         
+        if(selectedFilter == 'active' ){
+            
+			//filter contacts who are active and not archived
+			//parameters --> component, field to compare, value to be compared
+            helper.setFilteredData(component,'No_Longer_at_Company__c',false,helper,allData);
+           var filteredData = component.get('v.allData');
+            helper.setFilteredData(component,'PartnerArchived__c',false,helper,filteredData);
+
+
+        } else if(selectedFilter == 'nolongerincompany'){
+            helper.setFilteredData(component,'No_Longer_at_Company__c',true,helper,allData);
+        } else if(selectedFilter == 'archived'){
+            helper.setFilteredData(component,'PartnerArchived__c',true,helper,allData);
+        }
+    },
+    
+    
+     getRowActions: function (component, row, doneCallback) {
+       
+     
+        var actions = [];
+        
+        
+        if (row['PartnerArchived__c']) {
+            
+            actions.push({
+                'label': 'No Actions',
+                'iconName': 'utility:error',
+                'name': 'noaction',
+                'disabled':true
+            } ); 
+            
+        } else {
+             actions.push({
+                'label': 'Edit',
+                'iconName': 'utility:edit',
+                'name': 'edit'
+            } );    
+            actions.push({
+                'label': 'Archive',
+                'iconName': 'utility:archive',
+                'name': 'Archive'
+            });
+        }
+        
+        
+
+        
+        // simulate a trip to the server
+        setTimeout($A.getCallback(function () {
+            doneCallback(actions);
+        }), 200);
+    },
+    
+     showToast : function(title,type,message) {
+        var toastEvent = $A.get("e.force:showToast");
+        toastEvent.setParams({
+            "title": title,
+            "message": message,
+            "type" :  type
+        });
+        toastEvent.fire();
+    },
+    
+})

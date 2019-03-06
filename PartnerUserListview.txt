@@ -1,0 +1,359 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes" 
+                access="global" 
+                controller="PP4_UserController">
+    <aura:attribute name="data" type="Object"/>
+    <aura:attribute name="columns" type="List"/>
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="loading" type="Boolean" default="true"/>
+    <aura:attribute name="filterOptions" type="List"/>
+    <aura:attribute name="selectedFilter" type="String" default="active"/>
+    <aura:attribute name="allDataForFilter" type="List"/>
+    <aura:attribute name="allData" type="List"/>
+    <aura:attribute name="currentPageNumber" type="Integer" default="1"/>
+    <aura:attribute name="pageSize" type="Integer" />
+    <aura:attribute name="totalPages" type="Integer" default="false"/>
+    <aura:attribute name="pageList" type="List" default="false"/>
+    
+    <aura:attribute name="recId" type="Id" default=""/>
+    <aura:attribute name="openModal" type="Boolean" default="false"/>
+    <aura:attribute name="ModalTitle" type="String" />
+    <aura:attribute name="UserData" type="Object" />
+    <aura:attribute name="currentContext" type="String" default="CREATEUSERREQUESTEMAILCHECK"/> 
+    <aura:attribute name="resetPassword" type="String" default=""/> 
+    <aura:attribute name="deactivateUser" type="String" default=""/> 
+    <aura:attribute name="activateUser" type="String" default=""/> 
+    <aura:attribute name="selectedrecordId" type="String" />
+    <aura:attribute name="selectedrecord" type="Contact" default=""/>
+    
+    <aura:handler name="usersaved" event="c:PartnerMIUserSave" action="{!c.refreshOnSave}"/>
+    
+    
+    <aura:handler name="init" action="{!c.doInit}" value="{!this}"/>
+    
+    <aura:if isTrue="{!v.loading}">
+        <lightning:spinner/>
+    </aura:if>
+    <lightning:card title="Partner Users">
+        
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem padding="around-small" >
+                <lightning:combobox name="filter" label="Filter" value="{!v.selectedFilter}" options="{! v.filterOptions }" 
+                                    onchange="{! c.applyFilter }"/>
+                
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="around-small" >
+                
+                <lightning:input
+                                 aura:id="enter-search"
+                                 name="enter-search"
+                                 label="Search"
+                                 type="search"
+                                 />
+                
+                
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="around-small" alignmentBump="right">
+                <lightning:button label="Search" 
+                                  class="slds-m-top--large slds-float_right"
+                                  variant="brand"
+                                  onclick="{!c.handleSearch}"/>
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="around-small">
+                <lightning:button label="Create User" 
+                                  class="slds-m-top--large"
+                                  variant="brand"
+                                  onclick="{!c.openmodal}"/>
+            </lightning:layoutItem>
+        </lightning:layout>
+        <lightning:layout multipleRows="true" >
+            <lightning:layoutItem padding="around-small" size="12">
+                <!-- <lightning:datatable
+                                     aura:id="userDataTable"
+                                     columns="{! v.columns }"
+                                     data="{! v.data }"
+                                     keyField="Id"
+                                     onsave ="{!c.onSave}"
+                                     hideCheckboxColumn="true"
+                                     onrowaction="{! c.handleRowAction }"
+                                     onheaderaction="{! c.handleHeaderAction }"/>-->
+                
+                <table class="slds-table slds-table_bordered slds-max-medium-table_stacked-horizontal slds-m-top_small slds-table_fixed-layout">
+                    <thead> 
+                        <tr class="slds-text-title_caps">
+                            <th scope="col" class="fontweightnormal"> 
+                                <div class="slds-truncate" id="Contact Name" >CONTACT NAME</div>
+                            </th> 
+                            <th scope="col" class="fontweightnormal"> 
+                                <div class="slds-truncate" id="Contact Email ID" >CONTACT EMAIL ID</div>
+                            </th>
+                            <th scope="col" class="fontweightnormal"> 
+                                <div class="slds-truncate" id="Role" >ROLE Phone</div>
+                            </th> 
+                            <th scope="col" class="fontweightnormal"> 
+                                <div class="slds-truncate" id="Title" >TITLE</div>
+                            </th>
+                            <th scope="col" class="fontweightnormal"> 
+                                <div class="slds-truncate" id="User Name" >USER NAME</div>
+                            </th>
+                            <th scope="col" class="fontweightnormal"> 
+                                <div class="slds-truncate" id="Lead Opt out" >LEAD OPT OUT</div>
+                            </th>
+                            <th scope="col" class="fontweightnormal"> 
+                                <div class="slds-truncate" id="action" >Actions</div>
+                            </th>
+                        </tr>
+                    </thead> 
+                    <tbody>
+                        <aura:iteration items="{!v.data}" var="obj" indexVar="idx">
+                            <tr id="{!obj.id}">
+                                <td scope="row" data-label="Contact Name">
+                                    <div class="slds-truncate">
+                                        {!obj.accid}{!obj.ContactName}
+                                        
+                                    </div>
+                                </td>
+                                <td scope="row" data-label="Contact Email ID">
+                                    <div class="slds-truncate">{!obj.ContactEmail}</div>
+                                </td>
+                                <td scope="row" data-label="Role">
+                                    <div class="slds-truncate">{!obj.User_Type__c}</div>
+                                </td>
+                                <td scope="row" data-label="Title">
+                                    <div class="slds-truncate">{!obj.ContactTitle}</div>
+                                </td>
+                                <td scope="row" data-label="User Name">
+                                    <div class="slds-truncate">{!obj.Username}</div>
+                                </td>
+                                <td scope="row" data-label="Lead Opt out">
+                                    <div class="slds-truncate">{!obj.Opt_Lead__c}</div>
+                                </td>
+                                
+                                
+                                <!--<td role="gridcell">
+                                    <lightning:buttonMenu aura:id="menu" iconSize="x-small" alternativeText="View More" onselect="{!c.handleRowAction}" >
+                                        <lightning:menuItem value="edit" label="Edit" iconName="utility:edit">
+                                          <div onclick="{!c.handleRowAction}" data-value="{!obj}"/>
+                                        </lightning:menuItem>
+                                        <lightning:menuItem value="archive" label="Deactivate" iconName="utility:block_visitor">
+                                           <div onclick="{!c.handleRowAction}" data-value="{!obj}"/>
+                                        </lightning:menuItem>
+                                        <lightning:menuItem value="Reset Password" label="Reset Password" iconName="utility:reset_password">
+                                        </lightning:menuItem>
+                                    </lightning:buttonMenu>
+         </td>-->
+                                
+                                
+                                <td role="gridcell">
+                                    <aura:if isTrue="{!obj.IsActive}">
+                                         <div class="demo-only demo-visibility">
+                                         <div class="slds-show_large">
+                                        <lightning:buttonMenu aura:id="menu" iconSize="x-small" alternativeText="View More">
+                                            <div class="slds-grid slds-wrap slds-grid_align-space slds-size_12-of-12">                                                
+                                                <div class="slds-col slds-size_2-of-12 " title="Edit" onclick="{!c.editUser}" data-record="{!idx}">
+                                                    <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="Edit"/>
+                                                </div>  
+                                                <div class="slds-col slds-size_2-of-12" title="Deactivate" onclick="{!c.deactivateUserRecord}" data-record="{!idx}">
+                                                    <lightning:icon iconName="utility:block_visitor" size="xx-small" alternativeText="Deactivate"/>
+                                                </div>
+                                                <div class="slds-col slds-size_2-of-12" title="Archive" onclick="{!c.resetPasswordRecord}" data-record="{!idx}">
+                                                    <lightning:icon iconName="utility:reset_password" size="xx-small" alternativeText="Reset Password"/>
+                                                </div>
+                                            </div>
+                                        </lightning:buttonMenu>
+                                             </div>
+                                        </div>
+                                        
+                                      <div class="demo-only demo-visibility">
+                                         <div class="slds-hide_large">
+                                        <div class="slds-grid slds-grid_align-space">
+                                           
+                                            <div class="slds-col" onclick="{!c.editUser}" data-record="{!idx}">
+                                                <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="Edit"/>
+                                            </div>  
+                                            
+                                            <div class="slds-col" onclick="{!c.deactivateUserRecord}" data-record="{!idx}">
+                                                <lightning:icon iconName="utility:block_visitor" size="xx-small" alternativeText="Deactivate"/>
+                                            </div>
+                                            <div class="slds-col" onclick="{!c.resetPasswordRecord}" data-record="{!idx}">
+                                                <lightning:icon iconName="utility:reset_password" size="xx-small" alternativeText="Reset Password"/>
+                                            </div>
+                                        </div>
+                                            </div> 
+                                        </div>
+                                        <aura:set attribute="else">
+                                        <div class="demo-only demo-visibility">
+                                         <div class="slds-show_large">
+                                            <lightning:buttonMenu aura:id="menu" iconSize="x-small" alternativeText="View More" >
+                                                <div class="slds-grid slds-wrap slds-grid_align-space slds-size_12-of-12">
+                                                    <div class="slds-col slds-size_2-of-12" title="Activate" onclick="{!c.activateUserRecord}" data-record="{!idx}">
+                                                       <lightning:icon iconName="utility:adduser" size="xx-small" alternativeText="Activate"/>
+                                                    </div>
+												 </div>
+                                            </lightning:buttonMenu>
+                                            </div>
+                                            </div>
+                                            <div class="demo-only demo-visibility">
+                                                 <div class="slds-hide_large">
+                                            <div class="slds-grid slds-grid_align-space">
+                                                <div class="slds-col" onclick="{!c.activateUserRecord}" data-record="{!idx}">
+                                                    <lightning:icon iconName="utility:adduser" size="xx-small" alternativeText="Activate"/>
+                                                </div>
+											</div> 
+                                            </div>
+                                            </div>
+                                        </aura:set>
+                                    </aura:if>                                                                     
+                                </td>
+                            </tr>
+                        </aura:iteration>
+                    </tbody>
+                </table>         
+                
+                <aura:if isTrue="{!and(empty(v.allData),not(v.loading))}">
+                    <div class="slds-box slds-theme_shade slds-theme_info slds-theme_alert-texture">
+                        <p class="slds-align_absolute-center">No records found</p>
+                    </div>
+                </aura:if>
+            </lightning:layoutItem>
+            <aura:if isTrue="{!not(empty(v.allData))}">
+                <div aura:id="pagination" class="slds-align_absolute-center slds-show">
+                    <lightning:layoutItem padding="around-small" flexibility="auto">
+                        <lightning:button label="First" iconName="utility:left" iconPosition="left"
+                                          onclick="{!c.onFirst}" disabled="{! v.currentPageNumber == 1}"/>
+                        <lightning:button iconName="utility:chevronleft" iconPosition="left"
+                                          onclick="{!c.onPrev}" disabled="{! v.currentPageNumber == 1}"/>
+                        <span class="slds-p-horizontal_x-small">
+                            <a onclick="{!c.processMe}" name="1" 
+                               class="{! (v.currentPageNumber == 1) ? 'selected' : ''}">1</a>
+                        </span>
+                        <span class="slds-p-horizontal_xxx-small" aura:id="showSpan1">
+                            <a>...</a>
+                        </span>
+                        
+                        <aura:iteration items="{!v.pageList}" var="item">
+                            <span class="slds-p-horizontal_x-small">
+                                <a onclick="{!c.processMe}" name="{!item}"
+                                   class="{! (v.currentPageNumber == item) ? 'selected' : ''}">{!item}</a>
+                            </span>
+                        </aura:iteration>
+                        
+                        <span class="slds-p-horizontal_xxx-small" aura:id="showSpan2">
+                            <a>...</a>
+                        </span>
+                        <span class="slds-p-horizontal_x-small">
+                            <a onclick="{!c.processMe}" name="{!v.totalPages}"
+                               class="{! (v.currentPageNumber == v.totalPages) ? 'selected' : ''}">{!v.totalPages}</a>
+                        </span>
+                        <lightning:button iconName="utility:chevronright" iconPosition="right" 
+                                          disabled="{! v.currentPageNumber == v.totalPages}" onclick="{!c.onNext}"/>
+                        <lightning:button label="Last" iconName="utility:right" iconPosition="right" 
+                                          disabled="{! v.currentPageNumber == v.totalPages}" onclick="{!c.onLast}"/>
+                    </lightning:layoutItem>
+                </div>
+            </aura:if>
+        </lightning:layout>
+        
+        
+        
+        
+        
+    </lightning:card>
+    
+    <!--<aura:if isTrue="{!v.openModal}">
+    <div role="dialog" tabindex="-1" aria-labelledby="header43" aura:id="Modalbox" class="slds-modal ">
+        <div class="slds-modal__container" >
+            <header class="slds-modal__header">
+                <lightning:buttonIcon iconName="utility:close" onclick="{! c.closeModal }" 
+                                      alternativeText="close" variant="bare-inverse"
+                                      class="slds-modal__close" size="large"/>
+                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">User</h2>
+            </header>
+            <div class="slds-scrollable">
+                <c:Clone_PartnerMIUserRegistrationPage currentContext="{!v.currentContext}" recId="{!v.recId}" Data="{!v.UserData}" aura:id="partnerRegistration"/> 
+            </div>
+        </div>
+        
+    </div>
+    <div class="slds-backdrop " aura:id="Modalbackdrop"></div>  
+  </aura:if> -->
+    
+    <aura:if isTrue="{!v.openModal}">
+        <div role="dialog" tabindex="-1" aria-labelledby="header43" aura:id="Modalbox" class="slds-modal slds-modal_large slds-fade-in-open">
+            <div class="slds-modal__container" style="width: 85%;">
+                <div class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close" onclick="{! c.closeModal }" 
+                                          alternativeText="close" variant="bare-inverse"
+                                          class="slds-modal__close" size="large"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">{!v.ModalTitle}</h2>
+                </div>
+                <div class="slds-modal__content slds-p-around--medium">
+                    <c:Clone_PartnerMIUserRegistrationPage  recID="{!v.recordId}"/>  
+                    
+                    
+                </div>       
+                
+            </div>
+        </div>
+        <div class="slds-backdrop slds-backdrop--open" aura:id="Modalbackdrop"></div>  
+    </aura:if>
+    
+    <aura:if isTrue="{!equals(v.resetPassword,'RESETPASSWORD')}">
+        <div aura:id="deleteAll" style="height: 24rem;">
+            <section role="alertdialog" tabindex="-1" aria-labelledby="prompt-heading-id" aria-describedby="prompt-message-wrapper" class="slds-modal slds-fade-in-open slds-modal_prompt" aria-modal="true">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header slds-theme_error slds-theme_alert-texture">
+                        <h2 class="slds-text-heading_medium" id="prompt-heading-id">Warning</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium" id="prompt-message-wrapper">
+                        <p>Are you sure you want to reset password for this user?</p>
+                    </div>
+                    <footer class="slds-modal__footer slds-theme_default">
+                        <lightning:button iconName="utility:check" onclick="{!c.resetPasswordNow}" variant="brand" label="OK"/>
+                        <lightning:button iconName="utility:close" onclick="{!c.cancel}" variant="brand" label="Cancel"/>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </div>
+    </aura:if>
+    
+    <aura:if isTrue="{!equals(v.deactivateUser,'DEACTIVATE')}">
+        <div aura:id="deleteAll" style="height: 24rem;">
+            <section role="alertdialog" tabindex="-1" aria-labelledby="prompt-heading-id" aria-describedby="prompt-message-wrapper" class="slds-modal slds-fade-in-open slds-modal_prompt" aria-modal="true">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header slds-theme_error slds-theme_alert-texture">
+                        <h2 class="slds-text-heading_medium" id="prompt-heading-id">Warning</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium" id="prompt-message-wrapper">
+                        <p>Are you sure you want to deactivate this user?</p>
+                    </div>
+                    <footer class="slds-modal__footer slds-theme_default">
+                        <lightning:button iconName="utility:check" onclick="{!c.deactivate}" variant="brand" label="OK"/>
+                        <lightning:button iconName="utility:close" onclick="{!c.close}" variant="brand" label="Cancel"/>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </div>
+    </aura:if>
+    
+    <aura:if isTrue="{!equals(v.activateUser,'ACTIVATE')}">
+        <div aura:id="deleteAll" style="height: 24rem;">
+            <section role="alertdialog" tabindex="-1" aria-labelledby="prompt-heading-id" aria-describedby="prompt-message-wrapper" class="slds-modal slds-fade-in-open slds-modal_prompt" aria-modal="true">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header slds-theme_error slds-theme_alert-texture">
+                        <h2 class="slds-text-heading_medium" id="prompt-heading-id">Warning</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium" id="prompt-message-wrapper">
+                        <p>Are you sure you want to activate this user?</p>
+                    </div>
+                    <footer class="slds-modal__footer slds-theme_default">
+                        <lightning:button iconName="utility:check" onclick="{!c.activate}" variant="brand" label="OK"/>
+                        <lightning:button iconName="utility:close" onclick="{!c.closeActivate}" variant="brand" label="Cancel"/>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </div>
+    </aura:if>
+</aura:component>

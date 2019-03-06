@@ -1,0 +1,13 @@
+<aura:component controller="PP4_UserController" implements="forceCommunity:layout,force:appHostable,flexipage:availableForAllPageTypes,forceCommunity:availableForAllPageTypes" access="global" >
+    <aura:handler name="init" action="{!c.doInit}" value="{!this}"/>
+     <aura:attribute name="pageSize" type="Integer"/>
+    <lightning:tabset variant="scoped">
+        <lightning:tab label="Partner Users">
+            <c:Clone_PP4_PartnerUsers pageSize="{!v.pageSize}"/>
+        </lightning:tab>
+        <lightning:tab label="Partner Contacts">
+            <c:Clone_PP4_PartnerContacts pageSize="{!v.pageSize}"/>
+        </lightning:tab>
+    </lightning:tabset>
+    
+</aura:component>

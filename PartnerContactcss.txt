@@ -1,0 +1,9 @@
+.THIS .slds-scrollable_x { overflow: visible; }
+.THIS .slds-scrollable_y { overflow: visible; }
+.THIS .selected{
+    color: orange;
+    font-weight: bold;
+}
+.THIS .fontweightnormal {
+    font-weight: normal;
+}

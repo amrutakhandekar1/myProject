@@ -1,0 +1,140 @@
+({
+    
+    doInit : function(component, event, helper) {  
+        helper.refreshView(component, event,helper);
+    },
+    editContact: function (component, event, helper) {
+        console.log('Edit');
+        var cTraget = event.currentTarget;
+        var strid =  cTraget.dataset.record;
+        console.log('editContact indx' +strid);
+        
+        var selectedContacts = component.get("v.data")[strid];
+        console.log('selectedContacts' +selectedContacts.Id);  
+        
+        component.set('v.selectedrecordId', selectedContacts.Id);
+        component.set('v.recordId', selectedContacts.Id);
+        component.set('v.ModalTitle','Edit Partner Contact');
+        component.set('v.openModal',true);
+    },
+    archiveContact: function (component, event, helper) {
+        var cTraget = event.currentTarget;
+        var strid =  cTraget.dataset.record;
+        console.log('archiveContact indx' +strid);
+        
+        var selectedContacts = component.get("v.data")[strid];
+        component.set('v.ContactObject',selectedContacts);
+        component.set('v.archived','ARCHIVE');
+    },
+    
+    handleRowAction: function (component, event, helper) {
+        console.log('handleRowAction');
+        //var action = event.getParam('action');
+        var cTraget = event.currentTarget;
+       var action =  cTraget.dataset.value;
+        console.log('action' +action);
+       // console.log('action name' +action.name);
+        switch (action.name) {
+            case 'edit':
+                editContact(component, event, helper) ;
+                break;
+                
+            case 'archive':
+                archiveContact(component, event, helper) ;
+                break;
+        }
+    } ,   
+    handleRowAction1 : function (component, event, helper) {
+        var cTraget = event.currentTarget;
+        var strid =  cTraget.dataset.record;
+        console.log('handleRowAction1 indx' +strid);
+        
+        var selectedContacts = component.get("v.data")[strid];
+        console.log('selectedContacts' +selectedContacts.Id);        
+        component.set('v.selectedrecordId', selectedContacts.Id);
+        component.set('v.selectedrecord',selectedContacts);
+
+    },
+    
+    editButton:function (component, event, helper){
+        console.log('edit your page');  
+        
+        
+    },
+    archiveButton:function(component, event, helper){
+        console.log('archived your record');   
+    },
+    onNext : function(component, event, helper) {        
+        var pageNumber = component.get("v.currentPageNumber");
+        component.set("v.currentPageNumber", pageNumber+1);
+        helper.buildData(component, helper);
+    },
+    
+    onPrev : function(component, event, helper) {        
+        var pageNumber = component.get("v.currentPageNumber");
+        component.set("v.currentPageNumber", pageNumber-1);
+        helper.buildData(component, helper);
+    },
+    
+    processMe : function(component, event, helper) {
+        component.set("v.currentPageNumber", parseInt(event.target.name));
+        helper.buildData(component, helper);
+    },
+    
+    onFirst : function(component, event, helper) {        
+        component.set("v.currentPageNumber", 1);
+        helper.buildData(component, helper);
+    },
+    
+    onLast : function(component, event, helper) {        
+        component.set("v.currentPageNumber", component.get("v.totalPages"));
+        helper.buildData(component, helper);
+    },
+    
+    closeModal:function(component,event,helper){    
+        
+        component.set('v.openModal',false);
+    },
+    openmodal:function(component,event,helper) {
+        //reset rec id to null for new contact
+        component.set('v.ModalTitle','New  Contact');
+        
+        
+        component.set('v.recordId',null);
+        component.set('v.openModal',true);    
+    },
+    applyFilter : function(component,event,helper) {
+        //reset search term to blank on filter change
+        component.find('enter-search').set('v.value','');
+        helper.filterData(component,event,helper);
+        
+    },
+    
+    
+    handleSearch : function (component, event,helper) {
+        helper.filterData(component,event,helper);
+        helper.showSearchResults(component,event,helper);
+    },
+    
+    refreshOnSave :  function(component,event,helper) {
+        
+        //close modal box
+        component.set('v.openModal',false);
+        
+        //show loading spinner while data is fetched again
+        component.set('v.loading',true);
+        helper.refreshView(component, event,helper);
+        
+    }, 
+    archiveNow:function(component,event,helper)
+    {
+        var row=component.get('v.ContactObject');
+        
+        helper.archiveContact(component,event,helper,row);
+        
+    },
+    cancelArchive:function(component,event,helper)
+    {
+        component.set('v.archived','');
+    }
+})

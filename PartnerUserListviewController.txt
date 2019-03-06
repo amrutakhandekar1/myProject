@@ -1,0 +1,239 @@
+({
+    
+    doInit : function(component, event, helper) {  
+      helper.refreshView(component, event,helper);
+    },
+     editUser: function (component, event, helper) {
+        console.log('Edit');
+        var cTraget = event.currentTarget;
+        var strid =  cTraget.dataset.record;
+        console.log('editUser indx' +strid);
+        
+        var selectedUsers = component.get("v.data")[strid];
+        console.log('selectedUsers' +selectedUsers.Id);  
+        
+        component.set('v.selectedrecordId', selectedUsers.Id);
+        component.set('v.recordId', selectedUsers.Id);
+        //component.set('v.ModalTitle','Edit Partner Contact');
+        component.set('v.currentContext','EDITUSERREQUEST');
+        component.set('v.openModal',true); 
+    },
+      deactivateUserRecord: function (component, event, helper) {
+        var cTraget = event.currentTarget;
+        var strid =  cTraget.dataset.record;
+        console.log('deactivateUser indx' +strid);
+        
+        var selectedUsers = component.get("v.data")[strid];
+        //component.set('v.ContactObject',selectedContacts);
+      //  component.set('v.archived','ARCHIVE');
+     component.set('v.deactivateUser','DEACTIVATE');
+                component.set('v.UserData',selectedUsers);
+
+    },
+    activateUserRecord: function (component, event, helper) {
+        var cTraget = event.currentTarget;
+        var strid =  cTraget.dataset.record;
+        console.log('activateUser indx' +strid);
+        
+        var selectedUsers = component.get("v.data")[strid];
+        component.set('v.activateUser','ACTIVATE');
+        component.set('v.UserData',selectedUsers);
+
+    },
+    resetPasswordRecord: function (component, event, helper) {
+        var cTraget = event.currentTarget;
+        var strid =  cTraget.dataset.record;
+        console.log('deactivateUser indx' +strid);
+        
+        var selectedUsers = component.get("v.data")[strid];
+       	 //component.set('v.ContactObject',selectedContacts);
+     	 //  component.set('v.archived','ARCHIVE');
+     	 component.set('v.resetPassword','RESETPASSWORD');
+       component.set('v.UserData',selectedUsers);
+    },
+    cancel:function (cmp, event, helper) {
+        cmp.set('v.resetPassword','');       
+    },
+    
+    close:function (cmp, event, helper) {
+        cmp.set('v.deactivateUser','');
+        
+        
+    },
+     closeActivate:function (cmp, event, helper) {
+        
+        cmp.set('v.activateUser','');
+        
+        
+    },
+    handleRowAction: function (cmp, event, helper) {
+        var action = event.getParam('action');
+        var row = event.getParam('row');
+       
+        switch (action.name) {
+            case 'edit':
+
+                cmp.set('v.currentContext','EDITUSERREQUEST');
+                cmp.set('v.UserData',row);
+                var partnerRegCmp = cmp.find("partnerRegistration");
+                partnerRegCmp.sampleMethod();
+                
+                var cmpTarget = cmp.find('Modalbox');
+                var cmpBack = cmp.find('Modalbackdrop');
+                $A.util.addClass(cmpTarget, 'slds-fade-in-open');
+                $A.util.addClass(cmpBack, 'slds-backdrop--open'); 
+                break;
+            case 'activate':
+
+                 cmp.set('v.activateUser','ACTIVATE');
+                cmp.set('v.UserData',row);
+              
+                break;
+            case 'deactivate':
+
+                 cmp.set('v.deactivateUser','DEACTIVATE');
+                cmp.set('v.UserData',row);
+                break;
+            case 'resetpassword':
+
+                cmp.set('v.resetPassword','RESETPASSWORD');
+                cmp.set('v.UserData',row);
+
+                
+                
+                break;
+        }
+    },
+    
+    
+    onNext : function(component, event, helper) {        
+        var pageNumber = component.get("v.currentPageNumber");
+        component.set("v.currentPageNumber", pageNumber+1);
+        helper.buildData(component, helper);
+    },
+    
+    onPrev : function(component, event, helper) {        
+        var pageNumber = component.get("v.currentPageNumber");
+        component.set("v.currentPageNumber", pageNumber-1);
+        helper.buildData(component, helper);
+    },
+    
+    processMe : function(component, event, helper) {
+        component.set("v.currentPageNumber", parseInt(event.target.name));
+        helper.buildData(component, helper);
+    },
+    
+    onFirst : function(component, event, helper) {        
+        component.set("v.currentPageNumber", 1);
+        helper.buildData(component, helper);
+    },
+    
+    onLast : function(component, event, helper) {        
+        component.set("v.currentPageNumber", component.get("v.totalPages"));
+        helper.buildData(component, helper);
+    },
+    
+    closeModal:function(component,event,helper){    
+        
+        /*var cmpTarget = component.find('Modalbox');
+        var cmpBack = component.find('Modalbackdrop');
+        $A.util.removeClass(cmpBack,'slds-backdrop--open');
+        $A.util.removeClass(cmpTarget, 'slds-fade-in-open'); 
+        //reset to default context
+        component.set('v.currentContext','CREATEUSERREQUESTEMAILCHECK');
+        //reset the form data on child
+        var childCmp = component.find('partnerRegistration');
+        if(!$A.util.isEmpty(childCmp)){
+            childCmp.resetForm();
+        }*/
+       
+            component.set('v.openModal',false);
+        
+    },
+    openmodal:function(component,event,helper) {
+        /*var cmpTarget = component.find('Modalbox');
+        var cmpBack = component.find('Modalbackdrop');
+        $A.util.addClass(cmpTarget, 'slds-fade-in-open');
+        $A.util.addClass(cmpBack, 'slds-backdrop--open'); */
+        component.set('v.ModalTitle','New  User');
+        component.set('v.recordId',null);
+        component.set('v.openModal',true);  
+        
+        
+        
+    },
+    deactivate :function(component,event,helper) {
+      
+        helper.deactivateUser(component,event,helper);
+        
+    },
+     activate :function(component,event,helper) {
+      
+        helper.activateUser(component,event,helper);
+        
+    },
+    resetPasswordNow :function(component,event,helper) {
+        component.set('v.resetPassword','');
+        var action = component.get("c.resetPassword");
+        action.setParams({ userdata : component.get("v.UserData") });
+        action.setCallback(this,function(response) {
+            var state = response.getState();
+            if (state === "SUCCESS") {
+
+                helper.showToast('success', response.getReturnValue());
+            }
+            
+            
+            else if (state === "INCOMPLETE") {
+                // do something
+            }
+                else if (state === "ERROR") {
+
+                    var errors = response.getError();
+                    if (errors) {
+                        if (errors[0] && errors[0].message) {
+                            
+                            helper.showToast('error', errors[0].message);
+                        }
+                    } else {
+                        console.log("Unknown error");
+                    }
+                }
+        });
+        
+        $A.enqueueAction(action);
+        
+        
+    },
+    
+        
+    applyFilter : function(component,event,helper) {
+          //reset search term to blank on filter change
+        component.find('enter-search').set('v.value','');
+        helper.filterData(component,event,helper);   
+    },
+    
+    handleSearch : function (component, event,helper) {
+         //reset to selected filter before search
+            helper.filterData(component,event,helper);
+        helper.showSearchResults(component,event,helper);
+    },
+    onSave: function(component,event,helper) {
+        //reset search term to blank on filter change
+        component.find('enter-search').set('v.value','');
+        helper.saveUserData(component,event,helper);   
+    },
+    
+    refreshOnSave :  function(component,event,helper) {
+
+       var a = component.get('c.closeModal');
+        $A.enqueueAction(a);
+
+         component.set('v.loading',true);
+
+
+        helper.refreshView(component, event,helper);
+        
+    }, 
+    
+})

@@ -1,0 +1,365 @@
+({
+    refreshView :  function(component,event, helper) {
+        
+ 
+        var rowActions = helper.getRowActions.bind(this, component);
+        
+        
+        component.set('v.columns', [
+             {label: 'Contact Name', fieldName: 'ContactName', type: 'Name'},
+            {label: 'Contact Email ID', fieldName: 'ContactEmail', type: 'Email'},
+            {label: 'Role', fieldName: 'User_Type__c', type: 'text'},
+            {label: 'Title', fieldName: 'ContactTitle', type: 'text'},
+            {label: 'User Name', fieldName: 'Username', type: 'text'},
+            {label: 'Lead Opt out', fieldName: 'Opt_Lead__c',editable:'true', type: 'boolean'},
+            {type: 'action', typeAttributes: { rowActions: rowActions } }
+        ]); 
+        
+        
+        
+        helper.getUsers(component, helper);
+        helper.getFilterOptions(component,event);
+        
+    },
+    
+    
+    
+    getUsers : function(component, helper) {
+        var action = component.get("c.getUsers");
+       // action.setStorable();
+        action.setCallback(this,function(response) {
+            var state = response.getState();
+            if (state === "SUCCESS") {
+
+
+                component.set('v.loading',false);
+                component.set("v.totalPages", Math.ceil(response.getReturnValue().length/component.get("v.pageSize")));
+                
+                var rows = response.getReturnValue();
+                for (var i = 0; i < rows.length; i++) {
+                    var row = rows[i];
+                    if(row.Contact!=null){
+                        row.ContactName = row.Contact.Name;
+                        row.ContactTitle = row.Contact.Title;
+                        row.ContactEmail = row.Contact.Email;
+                        
+                    }
+
+                } 
+                if(component.get("v.totalPages")==1) {
+                    var page = component.find('pagination');
+                    $A.util.removeClass(page, 'slds-show');
+                    $A.util.addClass(page, 'slds-hide');
+                }
+                
+                component.set("v.allData", rows);
+                component.set("v.allDataForFilter", rows);
+                component.set("v.currentPageNumber",1);
+
+                //parameters --> component, field to compare, value to be compared
+                //default filter value is Active
+                helper.setFilteredData(component,'IsActive',true,helper);
+
+            }
+        });
+
+        $A.enqueueAction(action);
+    },
+    getRowActions: function (component, row, doneCallback) {
+
+
+
+        var actions = [];
+        
+        
+        if (row['IsActive']) {
+            
+            actions.push({
+                'label': 'Edit',
+                'iconName': 'utility:edit',
+                'name': 'edit'
+            } );    
+            actions.push({
+                'label': 'Deactivate',
+                'iconName': 'utility:block_visitor',
+                'name': 'deactivate'
+            });
+            actions.push({
+                'label': 'Reset Password',
+                'iconName': 'utility:reset_password',
+                'name': 'resetpassword'
+            });
+            
+        } else {
+            actions.push({
+                'label': 'Activate',
+                'iconName': 'utility:adduser',
+                'name': 'activate'
+            });
+        }
+        
+        
+        //actions.push(deleteAction);
+        
+        // simulate a trip to the server
+        setTimeout($A.getCallback(function () {
+            doneCallback(actions);
+        }), 200);
+    },
+    
+    /*
+     * this function will build table data
+     * based on current page selection
+     * */
+    buildData : function(component, helper) {
+        var data = [];
+        var pageNumber = component.get("v.currentPageNumber");
+        var pageSize = component.get("v.pageSize");
+        var allData = component.get("v.allData");
+        var x = (pageNumber-1)*pageSize;
+        
+        //creating data-table data
+        for(; x<(pageNumber)*pageSize; x++){
+            if(allData[x]){
+                data.push(allData[x]);
+            }
+        }
+        
+
+        component.set("v.data", data);
+        
+        helper.generatePageList(component, pageNumber);
+    },
+    
+    /*
+     * this function generate page list
+     * */
+    generatePageList : function(component, pageNumber){
+        
+        
+        pageNumber = parseInt(pageNumber);
+        var pageList = [];
+        var totalPage = component.get("v.totalPages");
+        if(totalPage<7){
+            for (var i = 2; i<=totalPage-1; i++) {
+                pageList.push(i);
+            }
+        } else {
+            if(pageNumber<5){
+                pageList.push(2,3,4,5,6);
+            } else if(pageNumber>(totalPage-5)){
+                pageList.push(totalPage-5, totalPage-4, totalPage-3, totalPage-2, totalPage-1);
+            } else{
+                pageList.push(pageNumber-2, pageNumber-1, pageNumber, pageNumber+1, pageNumber+2);
+            }
+        }
+        component.set("v.pageList", pageList);
+    },
+    showToast : function(type,message) {
+        var toastEvent = $A.get("e.force:showToast");
+        toastEvent.setParams({
+            "title": type,
+            "message": message,
+            "type" :  type
+        });
+        toastEvent.fire();
+    },
+    
+    getFilterOptions : function(component, event){
+        var filterOptions = [
+            {label:'Active', value:'active'},
+            {label:'InActive', value:'inactive'},
+            {label:'Lead Opted Out', value:'leadOptOut'}];
+        component.set('v.filterOptions',filterOptions);
+        component.set('v.selectedFilter','active');
+        
+    },
+    
+    setFilteredData : function(component,fieldname,value,helper){
+        var data = component.get('v.allDataForFilter');
+        var filteredData = [];
+
+        if(!$A.util.isEmpty(data)){
+            data.forEach(function(key){
+                if(key[fieldname] == value){
+                    filteredData.push(key);
+                }
+                
+            });
+
+            component.set('v.allData',filteredData);
+            component.set("v.totalPages", Math.ceil(filteredData.length/component.get("v.pageSize")));
+            helper.buildData(component, helper);
+        } 
+    },
+    
+    showSearchResults : function (component, event,helper) {
+        var queryTerm = component.find('enter-search').get('v.value');
+        component.set("v.currentPageNumber", 1);
+        
+        helper.setSearchFilteredData(component,'ContactName',queryTerm,helper);
+    },
+    
+    setSearchFilteredData : function(component,fieldname,value,helper){
+        var data = component.get('v.allData');
+        var filteredData = [];
+        
+        if(!$A.util.isEmpty(value)){
+            if(!$A.util.isEmpty(data)){
+                data.forEach(function(key){
+                    if(!$A.util.isEmpty(key[fieldname]) && !$A.util.isEmpty(value)){
+                        if(key[fieldname].toLowerCase().includes(value.toLowerCase())){
+                            filteredData.push(key);
+                        }
+                    }
+                    
+                    
+                });
+                
+                component.set('v.allData',filteredData);
+                component.set("v.totalPages", Math.ceil(filteredData.length/component.get("v.pageSize")));
+                helper.buildData(component, helper);
+            } 
+        }else{
+            //reset to default
+            //default filter value is Active
+            helper.filterData(component,event,helper);
+        }
+        
+    },
+    
+    
+    filterData : function(component,event,helper) {
+        
+        var selectedFilter = component.get('v.selectedFilter');
+        if(selectedFilter == 'active' ){
+            //parameters --> component, field to compare, value to be compared
+            helper.setFilteredData(component,'IsActive',true,helper);
+            helper.setcolumns(component,event,helper,true);
+        } else if(selectedFilter == 'inactive'){
+            
+            helper.setFilteredData(component,'IsActive',false,helper);
+            helper.setcolumns(component,event,helper,false);
+            
+        } else if(selectedFilter == 'leadOptOut'){
+            helper.setFilteredData(component,'Opt_Lead__c',true,helper);
+            helper.setcolumns(component,event,helper,true);
+        }
+    },
+    
+    
+    
+    deactivateUser:function(component,event,helper) {
+        component.set('v.deactivateUser','');
+        var action = component.get("c.deactivateUser");
+        action.setParams({ userdata : component.get("v.UserData") });
+        action.setCallback(this,function(response) {
+            var state = response.getState();
+            if (state === "SUCCESS") {
+
+                helper.showToast('success', response.getReturnValue());
+                helper.refreshView(component, event,helper);
+            }
+            
+            
+            else if (state === "INCOMPLETE") {
+                // do something
+            }
+                else if (state === "ERROR") {
+
+                    var errors = response.getError();
+                    if (errors) {
+                        if (errors[0] && errors[0].message) {
+                            
+                            helper.showToast('error', errors[0].message);
+                        }
+                    } else {
+                        console.log("Unknown error");
+                    }
+                }
+            
+            
+            
+            
+        });
+        
+        $A.enqueueAction(action);
+    },
+    activateUser:function(component,event,helper) {
+        component.set('v.activateUser','');
+        var action = component.get("c.activateUser");
+        action.setParams({ userdata : component.get("v.UserData") });
+        action.setCallback(this,function(response) {
+            var state = response.getState();
+            if (state === "SUCCESS") {
+
+                helper.showToast('success', response.getReturnValue());
+                helper.refreshView(component, event,helper);
+            }
+            
+            
+            else if (state === "INCOMPLETE") {
+                // do something
+            }
+                else if (state === "ERROR") {
+
+                    var errors = response.getError();
+                    if (errors) {
+                        if (errors[0] && errors[0].message) {
+                            
+                            helper.showToast('error', errors[0].message);
+                        }
+                    } else {
+                        console.log("Unknown error");
+                    }
+                }
+            
+            
+            
+            
+        });
+        
+        $A.enqueueAction(action);
+    },
+    
+    saveUserData:function(component,event,helper) {
+        var editedRecords =  component.find("userDataTable").get("v.draftValues");
+        console.log('Data from Save userData'+JSON.stringify(editedRecords));
+        var totalRecordEdited = editedRecords.length;
+        var action = component.get("c.updateUsers");
+        action.setParams({
+            'updateUsers' : editedRecords
+        });
+        action.setCallback(this,function(response) {
+            var state = response.getState();
+            if (state === "SUCCESS") {
+                //if update is successful
+                if(response.getReturnValue() === true){
+                    helper.showToast('success', totalRecordEdited+" User Records Updated");
+                    
+                    //helper.reloadDataTable();
+                    helper.refreshView(component, event,helper);
+                } else{ //if update got failed
+                    helper.showToast('error', "Error in update");
+                    
+                }
+            }
+        });
+        $A.enqueueAction(action);
+    },
+    
+    setcolumns : function(component,event,helper,editable){
+        var rowActions = helper.getRowActions.bind(this, component);
+        component.set('v.columns', [
+            {label: 'Contact Name', fieldName: 'ContactName', type: 'Name'},
+            {label: 'Contact Email ID', fieldName: 'ContactEmail', type: 'Email'},
+            {label: 'Role', fieldName: 'User_Type__c', type: 'text'},
+            {label: 'Title', fieldName: 'ContactTitle', type: 'text'},
+            {label: 'User Name', fieldName: 'Username', type: 'text'},
+            {label: 'Lead Opt out', fieldName: 'Opt_Lead__c', editable:editable,type: 'boolean'},
+            {type: 'action', typeAttributes: { rowActions: rowActions } }
+        ]); 
+    },
+    
+    
+})
